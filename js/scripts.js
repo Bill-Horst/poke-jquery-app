@@ -160,10 +160,6 @@ var MODAL_CONTROLS = (function() {
     $modalContainer.classList.remove('is-visible');
   }
 
-  document.querySelector('#show-modal').addEventListener('click', () => {
-    showModal('Modal title', 'This is the modal content!');
-  });
-
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && $modalContainer.classList.contains('is-visible')) {
       hideModal();
