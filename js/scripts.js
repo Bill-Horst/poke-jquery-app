@@ -7,10 +7,8 @@
 
     function loadList() {
       showLoadingMessage();
-      return fetch(apiUrl).then( (response) => {
-        return response.json();
-      }).then(function (json) {
-        json.results.forEach( (item) => {
+      return $.ajax(apiUrl, { dataType: 'json' }).then(function (response) {
+        response.results.forEach( (item) => {
           var pokemon = {
             name: item.name,
             detailsUrl: item.url
@@ -18,8 +16,6 @@
           add(pokemon);
         });
         hideLoadingMessage();
-      }).catch( (e) => {
-        console.error(e);
       });
     }
 
@@ -40,16 +36,12 @@
     function loadDetails(item) {
       showLoadingMessage();
       var url = item.detailsUrl;
-      return fetch(url).then( (response) => {
-        return response.json();
-      }).then( (details) => {
-        // Now we add the details to the item
-        item.imageUrl = details.sprites.front_default;
-        item.height = details.height;
-        item.types = Object.keys(details.types);
+      return $.ajax(url, { dataType: 'json' }).then(function (response) {
+        console.log(response); // This is the parsed JSON response
+        item.imageUrl = response.sprites.front_default;
+        item.height = response.height;
+        item.types = Object.keys(response.types);
         hideLoadingMessage();
-      }).catch( (e) => {
-        console.error(e);
       });
     }
 
@@ -57,11 +49,11 @@
       var loadingIcon = document.createElement('div');
       loadingIcon.innerHTML = 'Now loading!';
       loadingIcon.classList.add('loading-icon');
-      document.querySelector('body').append(loadingIcon);
+      $('body').append(loadingIcon);
     }
 
     function hideLoadingMessage() {
-      var el = document.querySelector('.loading-icon');
+      var el = $('.loading-icon');
       setTimeout( () => {
         el.remove();
       }, 1000);
@@ -76,32 +68,12 @@
   })();
 
   function addListItem(pokemon) {
-    // create elements:
-    var pokeLi = document.createElement('li');
-    var pokeName = document.createElement('p');
-    var pokeHeight = document.createElement('p');
-    var pokeInfoButton = document.createElement('button');
-
-    // assign values:
-    pokeName.innerHTML = pokemon.name;
-    pokeHeight.innerHTML = 'Height: ' + pokemon.height;
-    pokeInfoButton.innerHTML = pokemon.name;
-
-    // assign attributes:
-    pokeLi.classList.add('pokeListItem');
-
-    // append elements to main li:
-    pokeLi.appendChild(pokeName);
-    pokeLi.appendChild(pokeHeight);
-    pokeLi.appendChild(pokeInfoButton);
-
-    // append li to DOM ul:
-    document.querySelector('#pokemonList').append(pokeLi);
-
-    // add event listener:
-    pokeLi.addEventListener('click', (event) => {
+    var pokeLi = $(`<li class="pokeListItem">${pokemon.name}</li>`);
+    pokeLi.on('click', (e) => {
       showDetails(pokemon);
     });
+    $('#pokemonList').append(pokeLi);
+
   }
 
   pokemonRepository.loadList().then( () => {
@@ -122,55 +94,34 @@
 })();
 
 var MODAL_CONTROLS = (function() {
-  var $modalContainer = document.querySelector('#modal-container');
+  var $modalContainer = $('#modal-container');
 
   function showModal(pokemon) {
-    console.log(pokemon)
-    // Clear all existing modal content
-    $modalContainer.innerHTML = '';
-
-    var modal = document.createElement('div');
-    modal.classList.add('modal');
-
-    // Add the new modal content
-    var closeButtonElement = document.createElement('button');
-    closeButtonElement.classList.add('modal-close');
-    closeButtonElement.innerText = 'Close';
-    closeButtonElement.addEventListener('click', hideModal);
-
-    var nameDisplay = document.createElement('h1');
-    nameDisplay.innerText = pokemon.name;
-
-    var heightDisplay = document.createElement('p');
-    heightDisplay.innerText = `Height: ${pokemon.height}`;
-
-    var imageDisplay = document.createElement('img');
-    imageDisplay.setAttribute('src', pokemon.imageUrl);
-
-    modal.appendChild(closeButtonElement);
-    modal.appendChild(nameDisplay);
-    modal.appendChild(heightDisplay);
-    modal.appendChild(imageDisplay);
-    $modalContainer.appendChild(modal);
-
-    $modalContainer.classList.add('is-visible');
+    $modalContainer.empty();
+    var modal = $(`<div class="modal"></div>`);
+    var closeButton = $(`<button class="modal-close">Close</button>`).on('click', hideModal);
+    var name = $(`<h1>${pokemon.name}</h1>`);
+    var image = $(`<img src='${pokemon.imageUrl}' />`)
+    modal
+    .append(closeButton)
+    .append(name)
+    .append(image);
+    $modalContainer.append(modal).addClass('is-visible');
   }
 
   function hideModal() {
-    $modalContainer.classList.remove('is-visible');
+    $modalContainer.removeClass('is-visible');
   }
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && $modalContainer.classList.contains('is-visible')) {
+    if (e.key === 'Escape' && $modalContainer.hasClass('is-visible')) {
       hideModal();
     }
   });
 
-  $modalContainer.addEventListener('click', (e) => {
-    // Since this is also triggered when clicking INSIDE the modal container,
-    // We only want to close if the user clicks directly on the overlay
+  $modalContainer.on('click', (e) => {
     var target = e.target;
-    if (target === $modalContainer) {
+    if (e.target.classList.contains('is-visible')) {
       hideModal();
     }
   });
